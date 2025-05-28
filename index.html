@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Movie Franchise Timeline Explorer</title>
   <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@700&family=MedievalSharp&display=swap" rel="stylesheet">
   <style>
     :root {
       --primary: #6a11cb;
@@ -14,6 +15,9 @@
       --accent: #ff2d75;
       --timeline-release: #4cc9f0;
       --timeline-chrono: #f72585;
+      --scroll-paper: #f5e7c1;
+      --scroll-edge: #c9a66b;
+      --scroll-shadow: #5d4a2a;
     }
 
     * {
@@ -46,66 +50,109 @@
       height: auto;
     }
 
-    .franchise-selector {
+    .scroll-container {
       position: relative;
       width: 300px;
-      height: 300px;
       margin: 3rem auto;
+      perspective: 1000px;
     }
 
-    .center-circle {
-      position: absolute;
-      width: 120px;
-      height: 120px;
-      background: radial-gradient(circle, var(--primary), var(--secondary));
-      border-radius: 50%;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      color: white;
-      font-weight: bold;
-      font-size: 1.2rem;
-      cursor: pointer;
-      box-shadow: 0 0 20px rgba(106, 17, 203, 0.7);
-      transition: all 0.3s ease;
-      z-index: 10;
-    }
-
-    .center-circle:hover {
-      transform: translate(-50%, -50%) scale(1.05);
-      box-shadow: 0 0 30px rgba(106, 17, 203, 0.9);
-    }
-
-    .franchise-option {
-      position: absolute;
-      width: 80px;
+    .closed-scroll {
+      position: relative;
+      width: 250px;
       height: 80px;
-      background: linear-gradient(135deg, var(--secondary), var(--primary));
-      border-radius: 50%;
+      background: linear-gradient(to right, var(--scroll-edge), var(--scroll-paper) 20%, var(--scroll-paper) 80%, var(--scroll-edge));
+      border-radius: 5px;
+      margin: 0 auto;
+      cursor: pointer;
+      transform-style: preserve-3d;
+      transform-origin: center top;
+      box-shadow: 0 5px 15px var(--scroll-shadow);
+      transition: all 0.8s ease;
+      z-index: 10;
       display: flex;
       align-items: center;
       justify-content: center;
-      color: white;
-      font-size: 0.9rem;
-      cursor: pointer;
-      transition: all 0.5s ease;
-      opacity: 0;
-      transform: translate(-50%, -50%) scale(0);
-      box-shadow: 0 0 15px rgba(37, 117, 252, 0.5);
     }
 
-    .franchise-option:hover {
-      transform: translate(-50%, -50%) scale(1.1) !important;
-      box-shadow: 0 0 25px rgba(37, 117, 252, 0.8);
+    .closed-scroll::before, .closed-scroll::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      width: 20px;
+      height: 100%;
+      background: var(--scroll-edge);
+    }
+
+    .closed-scroll::before {
+      left: 0;
+      border-radius: 5px 0 0 5px;
+    }
+
+    .closed-scroll::after {
+      right: 0;
+      border-radius: 0 5px 5px 0;
+    }
+
+    .closed-scroll .scroll-text {
+      font-family: 'MedievalSharp', cursive;
+      font-size: 1.5rem;
+      color: #3a2a13;
+      text-shadow: 1px 1px 1px rgba(255,255,255,0.5);
+      letter-spacing: 1px;
+    }
+
+    .scroll-container.open .closed-scroll {
+      transform: rotateX(180deg);
+      opacity: 0;
+    }
+
+    .open-scroll {
+      position: absolute;
+      top: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 280px;
+      background: var(--scroll-paper);
+      border-left: 15px solid var(--scroll-edge);
+      border-right: 15px solid var(--scroll-edge);
+      padding: 20px;
+      box-shadow: 0 10px 25px var(--scroll-shadow);
+      border-radius: 5px;
+      opacity: 0;
+      transform: scaleY(0);
+      transform-origin: top;
+      transition: all 0.8s ease;
       z-index: 5;
     }
 
-    .franchise-selector.active .franchise-option {
+    .scroll-container.open .open-scroll {
       opacity: 1;
-      transform: translate(-50%, -50%) scale(1);
+      transform: translateX(-50%) scaleY(1);
+    }
+
+    .franchise-list {
+      list-style: none;
+      text-align: left;
+    }
+
+    .franchise-item {
+      padding: 10px 5px;
+      margin: 5px 0;
+      border-bottom: 1px dashed #c9a66b;
+      font-family: 'Cinzel Decorative', cursive;
+      color: #3a2a13;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .franchise-item:hover {
+      background: rgba(201, 166, 107, 0.2);
+      transform: translateX(5px);
+    }
+
+    .franchise-item:last-child {
+      border-bottom: none;
     }
 
     .timelines-container {
@@ -288,30 +335,46 @@
       animation: fadeInUp 0.5s ease forwards;
     }
 
-    @keyframes expandCircle {
-      from {
-        transform: scale(0);
+    @keyframes rollOpen {
+      0% {
+        transform: rotateX(0);
+        opacity: 1;
+      }
+      50% {
+        transform: rotateX(90deg);
         opacity: 0;
       }
-      to {
-        transform: scale(1);
-        opacity: 1;
+      100% {
+        transform: rotateX(180deg);
+        opacity: 0;
       }
     }
 
-    .animate-options {
-      animation: expandCircle 0.5s ease-out forwards;
+    @keyframes scrollAppear {
+      0% {
+        transform: translateX(-50%) scaleY(0);
+        opacity: 0;
+      }
+      100% {
+        transform: translateX(-50%) scaleY(1);
+        opacity: 1;
+      }
     }
   </style>
 </head>
 <body>
   <div class="container">
-    <!-- Replaced h1 with logo image -->
     <img src="logo.png" alt="Franchise Timeline Explorer" class="logo">
 
-    <div class="franchise-selector">
-      <div class="center-circle" id="centerCircle">Select Franchise</div>
-      <!-- Franchise options will be added dynamically -->
+    <div class="scroll-container" id="scrollContainer">
+      <div class="closed-scroll" id="closedScroll">
+        <div class="scroll-text">Select Franchise</div>
+      </div>
+      <div class="open-scroll" id="openScroll">
+        <ul class="franchise-list" id="franchiseList">
+          <!-- Franchise options will be added dynamically -->
+        </ul>
+      </div>
     </div>
 
     <div class="timelines-container" id="timelinesContainer">
@@ -340,45 +403,46 @@
       try {
         const response = await fetch('https://automated-movie-timeline.onrender.com/sheet-data');
         allMovies = await response.json();
-        initFranchiseSelector(allMovies);
+        initScrollSelector(allMovies);
       } catch (error) {
         console.error('Error fetching data:', error);
-        document.getElementById('centerCircle').textContent = 'Error loading data';
+        document.getElementById('closedScroll').textContent = 'Error loading data';
       }
 
-      function initFranchiseSelector(movies) {
-        const centerCircle = document.getElementById('centerCircle');
-        const selector = document.querySelector('.franchise-selector');
+      function initScrollSelector(movies) {
+        const scrollContainer = document.getElementById('scrollContainer');
+        const closedScroll = document.getElementById('closedScroll');
+        const openScroll = document.getElementById('openScroll');
+        const franchiseList = document.getElementById('franchiseList');
 
         // Get unique franchises
         const franchises = [...new Set(movies.map(movie => movie.franchise))];
 
-        // Create franchise options in a circle
-        franchises.forEach((franchise, index) => {
-          const option = document.createElement('div');
-          option.className = 'franchise-option';
-          option.textContent = franchise;
-          option.style.top = `${150 + 120 * Math.sin((index * 2 * Math.PI) / franchises.length)}px`;
-          option.style.left = `${150 + 120 * Math.cos((index * 2 * Math.PI) / franchises.length)}px`;
-          option.style.animationDelay = `${index * 0.1}s`;
-          option.addEventListener('click', () => selectFranchise(franchise, movies));
-          selector.appendChild(option);
+        // Create franchise options in the scroll
+        franchises.forEach(franchise => {
+          const item = document.createElement('li');
+          item.className = 'franchise-item';
+          item.textContent = franchise;
+          item.addEventListener('click', () => {
+            selectFranchise(franchise, movies);
+            // Close the scroll
+            scrollContainer.classList.remove('open');
+          });
+          franchiseList.appendChild(item);
         });
 
-        // Center circle click handler
-        centerCircle.addEventListener('click', () => {
-          selector.classList.toggle('active');
+        // Closed scroll click handler
+        closedScroll.addEventListener('click', () => {
+          scrollContainer.classList.add('open');
         });
       }
 
       function selectFranchise(selectedFranchise, movies) {
-        const centerCircle = document.getElementById('centerCircle');
-        const selector = document.querySelector('.franchise-selector');
+        const closedScroll = document.getElementById('closedScroll');
         const timelinesContainer = document.getElementById('timelinesContainer');
 
-        // Update UI
-        centerCircle.textContent = selectedFranchise;
-        selector.classList.remove('active');
+        // Update closed scroll text
+        closedScroll.querySelector('.scroll-text').textContent = selectedFranchise;
         timelinesContainer.style.display = 'flex';
 
         // Filter movies by selected franchise
