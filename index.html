@@ -95,6 +95,7 @@
       opacity: 0;
       transform: translate(-50%, -50%) scale(0);
       box-shadow: 0 0 15px rgba(37, 117, 252, 0.5);
+      z-index: 1;
     }
 
     .franchise-option:hover {
@@ -288,19 +289,37 @@
       animation: fadeInUp 0.5s ease forwards;
     }
 
-    @keyframes expandCircle {
-      from {
-        transform: scale(0);
+    @keyframes expandFromCenter {
+      0% {
+        transform: translate(-50%, -50%) scale(0);
         opacity: 0;
       }
-      to {
-        transform: scale(1);
+      50% {
+        opacity: 0.5;
+      }
+      100% {
+        transform: translate(var(--final-x), var(--final-y)) scale(1);
         opacity: 1;
       }
     }
 
     .animate-options {
-      animation: expandCircle 0.5s ease-out forwards;
+      animation: expandFromCenter 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+    }
+
+    @keyframes shrinkToCenter {
+      0% {
+        transform: translate(var(--current-x), var(--current-y)) scale(1);
+        opacity: 1;
+      }
+      100% {
+        transform: translate(-50%, -50%) scale(0);
+        opacity: 0;
+      }
+    }
+
+    .animate-options-out {
+      animation: shrinkToCenter 0.4s ease-in forwards;
     }
   </style>
 </head>
@@ -352,22 +371,65 @@
 
         // Get unique franchises
         const franchises = [...new Set(movies.map(movie => movie.franchise))];
+        let isOpen = false;
+        let franchiseOptions = [];
 
         // Create franchise options in a circle
         franchises.forEach((franchise, index) => {
           const option = document.createElement('div');
           option.className = 'franchise-option';
           option.textContent = franchise;
-          option.style.top = `${150 + 120 * Math.sin((index * 2 * Math.PI) / franchises.length)}px`;
-          option.style.left = `${150 + 120 * Math.cos((index * 2 * Math.PI) / franchises.length)}px`;
-          option.style.animationDelay = `${index * 0.1}s`;
+          
+          // Calculate final positions
+          const angle = (index * 2 * Math.PI) / franchises.length;
+          const distance = 120;
+          const finalX = 150 + distance * Math.cos(angle);
+          const finalY = 150 + distance * Math.sin(angle);
+          
+          // Set initial position (center)
+          option.style.top = '150px';
+          option.style.left = '150px';
+          
+          // Store final positions as CSS variables
+          option.style.setProperty('--final-x', `${finalX}px`);
+          option.style.setProperty('--final-y', `${finalY}px`);
+          
           option.addEventListener('click', () => selectFranchise(franchise, movies));
           selector.appendChild(option);
+          franchiseOptions.push(option);
         });
 
         // Center circle click handler
         centerCircle.addEventListener('click', () => {
-          selector.classList.toggle('active');
+          if (isOpen) {
+            // Close animation
+            franchiseOptions.forEach((option, index) => {
+              // Get current position
+              const rect = option.getBoundingClientRect();
+              const currentX = rect.left + rect.width/2 - selector.getBoundingClientRect().left;
+              const currentY = rect.top + rect.height/2 - selector.getBoundingClientRect().top;
+              
+              option.style.setProperty('--current-x', `${currentX}px`);
+              option.style.setProperty('--current-y', `${currentY}px`);
+              
+              option.classList.remove('animate-options');
+              option.classList.add('animate-options-out');
+              
+              // Reset after animation
+              setTimeout(() => {
+                option.classList.remove('animate-options-out');
+                option.style.opacity = '0';
+              }, 400);
+            });
+          } else {
+            // Open animation
+            franchiseOptions.forEach((option, index) => {
+              option.classList.add('animate-options');
+              option.style.opacity = '1';
+            });
+          }
+          
+          isOpen = !isOpen;
         });
       }
 
@@ -378,7 +440,6 @@
 
         // Update UI
         centerCircle.textContent = selectedFranchise;
-        selector.classList.remove('active');
         timelinesContainer.style.display = 'flex';
 
         // Filter movies by selected franchise
