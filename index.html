@@ -18,6 +18,7 @@
       --scroll-paper: #f5e7c1;
       --scroll-edge: #c9a66b;
       --scroll-shadow: #5d4a2a;
+      --search-brown: #8b6b3d;
     }
 
     * {
@@ -43,7 +44,7 @@
       padding: 2rem;
       text-align: center;
       flex-grow: 1;
-      margin-left: 300px; /* Space for the scroll */
+      margin-left: 300px;
     }
 
     .logo {
@@ -143,10 +144,40 @@
       transform: scaleY(1);
     }
 
+    .search-container {
+      position: relative;
+      margin-bottom: 15px;
+    }
+
+    .search-input {
+      width: 100%;
+      padding: 8px 30px 8px 10px;
+      border: 1px solid var(--scroll-edge);
+      border-radius: 20px;
+      background-color: rgba(255, 255, 255, 0.8);
+      font-family: 'MedievalSharp', cursive;
+      color: var(--search-brown);
+      outline: none;
+    }
+
+    .search-input::placeholder {
+      color: var(--search-brown);
+      opacity: 0.7;
+    }
+
+    .search-icon {
+      position: absolute;
+      right: 10px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--search-brown);
+    }
+
     .franchise-list {
       list-style: none;
       text-align: left;
       padding: 0;
+      margin: 0;
     }
 
     .franchise-item {
@@ -166,6 +197,14 @@
 
     .franchise-item:last-child {
       border-bottom: none;
+    }
+
+    .no-results {
+      color: var(--search-brown);
+      font-family: 'MedievalSharp', cursive;
+      text-align: center;
+      padding: 10px;
+      font-style: italic;
     }
 
     .timelines-container {
@@ -402,9 +441,14 @@
         <div class="scroll-text">Select Franchise</div>
       </div>
       <div class="open-scroll" id="openScroll">
+        <div class="search-container">
+          <input type="text" class="search-input" id="searchInput" placeholder="Search franchises...">
+          <span class="search-icon">🔍</span>
+        </div>
         <ul class="franchise-list" id="franchiseList">
           <!-- Franchise options will be added dynamically -->
         </ul>
+        <div class="no-results" id="noResults" style="display: none;">No franchises found</div>
       </div>
     </div>
   </div>
@@ -435,40 +479,69 @@
     document.addEventListener('DOMContentLoaded', async () => {
       // Fetch data from server
       let allMovies = [];
+      let franchises = [];
       try {
         const response = await fetch('https://automated-movie-timeline.onrender.com/sheet-data');
         allMovies = await response.json();
-        initScrollSelector(allMovies);
+        franchises = [...new Set(allMovies.map(movie => movie.franchise))];
+        initScrollSelector(allMovies, franchises);
       } catch (error) {
         console.error('Error fetching data:', error);
         document.getElementById('closedScroll').textContent = 'Error loading data';
       }
 
-      function initScrollSelector(movies) {
+      function initScrollSelector(movies, franchises) {
         const scrollContainer = document.getElementById('scrollContainer');
         const closedScroll = document.getElementById('closedScroll');
         const openScroll = document.getElementById('openScroll');
         const franchiseList = document.getElementById('franchiseList');
-
-        // Get unique franchises
-        const franchises = [...new Set(movies.map(movie => movie.franchise))];
+        const searchInput = document.getElementById('searchInput');
+        const noResults = document.getElementById('noResults');
 
         // Create franchise options in the scroll
-        franchises.forEach(franchise => {
-          const item = document.createElement('li');
-          item.className = 'franchise-item';
-          item.textContent = franchise;
-          item.addEventListener('click', () => {
-            selectFranchise(franchise, movies);
-            // Close the scroll
-            scrollContainer.classList.remove('open');
+        function renderFranchiseList(filteredFranchises = franchises) {
+          franchiseList.innerHTML = '';
+          noResults.style.display = 'none';
+          
+          if (filteredFranchises.length === 0) {
+            noResults.style.display = 'block';
+            return;
+          }
+
+          filteredFranchises.forEach(franchise => {
+            const item = document.createElement('li');
+            item.className = 'franchise-item';
+            item.textContent = franchise;
+            item.addEventListener('click', () => {
+              selectFranchise(franchise, movies);
+              // Close the scroll
+              scrollContainer.classList.remove('open');
+              // Reset search
+              searchInput.value = '';
+              renderFranchiseList();
+            });
+            franchiseList.appendChild(item);
           });
-          franchiseList.appendChild(item);
+        }
+
+        // Initial render
+        renderFranchiseList();
+
+        // Search functionality
+        searchInput.addEventListener('input', (e) => {
+          const searchTerm = e.target.value.toLowerCase();
+          const filtered = franchises.filter(franchise => 
+            franchise.toLowerCase().includes(searchTerm)
+          );
+          renderFranchiseList(filtered);
         });
 
         // Closed scroll click handler
         closedScroll.addEventListener('click', () => {
           scrollContainer.classList.toggle('open');
+          if (scrollContainer.classList.contains('open')) {
+            searchInput.focus();
+          }
         });
       }
 
