@@ -34,6 +34,7 @@
       color: var(--light);
       min-height: 100vh;
       overflow-x: hidden;
+      display: flex;
     }
 
     .container {
@@ -41,6 +42,8 @@
       margin: 0 auto;
       padding: 2rem;
       text-align: center;
+      flex-grow: 1;
+      margin-left: 300px; /* Space for the scroll */
     }
 
     .logo {
@@ -50,10 +53,18 @@
       height: auto;
     }
 
+    .scroll-wrapper {
+      position: fixed;
+      left: 20px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 260px;
+      z-index: 100;
+    }
+
     .scroll-container {
       position: relative;
-      width: 300px;
-      margin: 3rem auto;
+      width: 100%;
       perspective: 1000px;
     }
 
@@ -110,9 +121,10 @@
     .open-scroll {
       position: absolute;
       top: 0;
-      left: 50%;
-      transform: translateX(-50%);
-      width: 280px;
+      left: 0;
+      width: 100%;
+      max-height: 70vh;
+      overflow-y: auto;
       background: var(--scroll-paper);
       border-left: 15px solid var(--scroll-edge);
       border-right: 15px solid var(--scroll-edge);
@@ -128,12 +140,13 @@
 
     .scroll-container.open .open-scroll {
       opacity: 1;
-      transform: translateX(-50%) scaleY(1);
+      transform: scaleY(1);
     }
 
     .franchise-list {
       list-style: none;
       text-align: left;
+      padding: 0;
     }
 
     .franchise-item {
@@ -319,6 +332,26 @@
       }
     }
 
+    @media (max-width: 1024px) {
+      body {
+        flex-direction: column;
+      }
+      
+      .scroll-wrapper {
+        position: relative;
+        left: auto;
+        top: auto;
+        transform: none;
+        width: 100%;
+        margin: 20px auto;
+      }
+      
+      .container {
+        margin-left: 0;
+        padding: 1rem;
+      }
+    }
+
     /* Animations */
     @keyframes fadeInUp {
       from {
@@ -352,20 +385,18 @@
 
     @keyframes scrollAppear {
       0% {
-        transform: translateX(-50%) scaleY(0);
+        transform: scaleY(0);
         opacity: 0;
       }
       100% {
-        transform: translateX(-50%) scaleY(1);
+        transform: scaleY(1);
         opacity: 1;
       }
     }
   </style>
 </head>
 <body>
-  <div class="container">
-    <img src="logo.png" alt="Franchise Timeline Explorer" class="logo">
-
+  <div class="scroll-wrapper">
     <div class="scroll-container" id="scrollContainer">
       <div class="closed-scroll" id="closedScroll">
         <div class="scroll-text">Select Franchise</div>
@@ -376,6 +407,10 @@
         </ul>
       </div>
     </div>
+  </div>
+
+  <div class="container">
+    <img src="logo.png" alt="Franchise Timeline Explorer" class="logo">
 
     <div class="timelines-container" id="timelinesContainer">
       <div class="timeline release-timeline">
@@ -433,7 +468,7 @@
 
         // Closed scroll click handler
         closedScroll.addEventListener('click', () => {
-          scrollContainer.classList.add('open');
+          scrollContainer.classList.toggle('open');
         });
       }
 
